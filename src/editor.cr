@@ -7,9 +7,11 @@ require "./ioctl"
 class Editor
   property rows : Int32 = 0
   property columns : Int32 = 0
+  property buffer : String::Builder
 
   def initialize
     get_window_size!
+    @buffer = String::Builder.new
   end
 
   def run
@@ -29,11 +31,11 @@ class Editor
     char.bytes.first & 0x1f
   end
 
-  private def drawRows
-    @rows.times do |i|
-      print "~"
+  private def draw_rows
+    rows.times do |i|
+      @buffer << "~"
 
-      print "\r\n" unless i == @rows - 1
+      @buffer << "\r\n" unless i == rows - 1
     end
   end
 
@@ -45,11 +47,7 @@ class Editor
         case c.bytes.first
         when ctrl_key('q')
           return false
-        else
-          print "#{c.bytes.to_s}\r\n"
         end
-      else
-        print "#{c.bytes.to_s} ('#{c}')\r\n"
       end
     end
 
@@ -57,14 +55,18 @@ class Editor
   end
 
   private def refresh_screen
-    print "\x1b[2J"
-    print "\x1b[H"
+    @buffer = String::Builder.new
+    @buffer << "\x1b[2J"
+    @buffer << "\x1b[H"
 
-    drawRows
+    draw_rows
 
-    print "\x1b[H"
+    @buffer << "\x1b[H"
+    print buffer.to_s
   end
 
+  # todo: get window size the hard way
+  # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
   private def get_window_size!
     LibC.ioctl(1, LibC::TIOCGWINSZ, out screen_size)
     @rows = screen_size.ws_col.to_i - 1
