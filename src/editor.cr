@@ -5,12 +5,17 @@ require "termios"
 require "./ioctl"
 
 class Editor
+  VERSION = "0.1.0"
+
   property rows : Int32 = 0
   property columns : Int32 = 0
   property buffer : String::Builder
 
   def initialize
     get_window_size!
+    puts "rows: #{rows}"
+    puts "columns: #{columns}"
+    Process.exit(0)
     @buffer = String::Builder.new
   end
 
@@ -33,8 +38,12 @@ class Editor
 
   private def draw_rows
     rows.times do |i|
-      @buffer << "~"
-
+      if i == (rows / 3).to_i
+        @buffer << "Wes's editor -- version #{VERSION}"
+      else
+        @buffer << "~"
+      end
+      @buffer << "\x1b[K" # erases the part of the line to the right of the cursor
       @buffer << "\r\n" unless i == rows - 1
     end
   end
@@ -56,12 +65,13 @@ class Editor
 
   private def refresh_screen
     @buffer = String::Builder.new
-    @buffer << "\x1b[2J"
-    @buffer << "\x1b[H"
+    @buffer << "\x1b[?25l" # hide cursor
+    @buffer << "\x1b[H"    # reposition cursor
 
     draw_rows
 
-    @buffer << "\x1b[H"
+    @buffer << "\x1b[H"    # reposition cursor
+    @buffer << "\x1b[?25h" # show cursor
     print buffer.to_s
   end
 
@@ -69,8 +79,8 @@ class Editor
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
   private def get_window_size!
     LibC.ioctl(1, LibC::TIOCGWINSZ, out screen_size)
-    @rows = screen_size.ws_col.to_i - 1
-    @columns = screen_size.ws_row.to_i - 2
+    @columns = screen_size.ws_col.to_i
+    @rows = screen_size.ws_row.to_i
   end
 end
 
