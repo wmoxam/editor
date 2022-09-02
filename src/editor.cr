@@ -13,6 +13,7 @@ class Editor
 
   def initialize
     get_window_size!
+    puts "STDIN.tty? #{STDIN.tty?}"
     puts "rows: #{rows}"
     puts "columns: #{columns}"
     Process.exit(0)
@@ -78,7 +79,12 @@ class Editor
   # todo: get window size the hard way
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
   private def get_window_size!
-    LibC.ioctl(1, LibC::TIOCGWINSZ, out screen_size)
+    tty_fd = LibC.open("/dev/tty", LibC::O_EVTONLY | LibC::O_NONBLOCK)
+    puts tty_fd.inspect
+    puts LibC::O_EVTONLY | LibC::O_NONBLOCK
+    puts LibC::TIOCGWINSZ
+    result = LibC.ioctl(tty_fd, LibC::TIOCGWINSZ, out screen_size)
+    puts screen_size.inspect
     @columns = screen_size.ws_col.to_i
     @rows = screen_size.ws_row.to_i
   end
