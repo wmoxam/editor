@@ -2,7 +2,6 @@
 # Based on kilo, https://viewsourcecode.org/snaptoken/kilo/index.html
 
 require "termios"
-require "./ioctl"
 
 class Editor
   VERSION = "0.1.0"
@@ -13,10 +12,6 @@ class Editor
 
   def initialize
     get_window_size!
-    puts "STDIN.tty? #{STDIN.tty?}"
-    puts "rows: #{rows}"
-    puts "columns: #{columns}"
-    Process.exit(0)
     @buffer = String::Builder.new
   end
 
@@ -79,14 +74,30 @@ class Editor
   # todo: get window size the hard way
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
   private def get_window_size!
-    tty_fd = LibC.open("/dev/tty", LibC::O_EVTONLY | LibC::O_NONBLOCK)
-    puts tty_fd.inspect
-    puts LibC::O_EVTONLY | LibC::O_NONBLOCK
-    puts LibC::TIOCGWINSZ
-    result = LibC.ioctl(tty_fd, LibC::TIOCGWINSZ, out screen_size)
-    puts screen_size.inspect
-    @columns = screen_size.ws_col.to_i
-    @rows = screen_size.ws_row.to_i
+    STDOUT.print "\x1b[999C\x1b[999B"
+    STDOUT.print "\x1b[6n"
+
+    puts ""
+    size = String::Builder.new
+
+    STDIN.raw do |io|
+      io.each_char do |c|
+        unless c.nil?
+          unless c.ascii_control?
+            size << c
+            break if c == 'R'
+          end
+        end
+      end
+
+      matches = size.to_s.match(/(\d+);(\d+)/)
+
+      if matches
+        _all, rows_s, cols_s = matches
+        @columns = cols_s.to_i
+        @rows = rows_s.to_i
+      end
+    end
   end
 end
 
