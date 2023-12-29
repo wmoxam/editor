@@ -1,8 +1,6 @@
 # A simple text editor
 # Based on kilo, https://viewsourcecode.org/snaptoken/kilo/index.html
 
-require "termios"
-
 class Editor
   VERSION = "0.1.0"
 
