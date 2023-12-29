@@ -8,23 +8,22 @@ class Editor
 
   property rows : Int32 = 0
   property columns : Int32 = 0
-  property buffer : String::Builder
+  property screen_buffer : String::Builder
 
   def initialize
     get_window_size!
-    @buffer = String::Builder.new
+    @screen_buffer = String::Builder.new
   end
 
   def run
     STDIN.raw do |io|
       while true
         refresh_screen
-
-        unless process_keypresses(io)
-          refresh_screen
-          Process.exit(0)
-        end
+        break unless process_keypresses(io)
       end
+
+      print "\x1b[2J"
+      print "\x1b[H"
     end
   end
 
@@ -35,12 +34,12 @@ class Editor
   private def draw_rows
     rows.times do |i|
       if i == (rows / 3).to_i
-        @buffer << "Wes's editor -- version #{VERSION}"
+        @screen_buffer << "Wes's editor -- version #{VERSION}"
       else
-        @buffer << "~"
+        @screen_buffer << "~"
       end
-      @buffer << "\x1b[K" # erases the part of the line to the right of the cursor
-      @buffer << "\r\n" unless i == rows - 1
+      @screen_buffer << "\x1b[K" # erases the part of the line to the right of the cursor
+      @screen_buffer << "\r\n" unless i == rows - 1
     end
   end
 
@@ -60,22 +59,21 @@ class Editor
   end
 
   private def refresh_screen
-    @buffer = String::Builder.new
-    @buffer << "\x1b[?25l" # hide cursor
-    @buffer << "\x1b[H"    # reposition cursor
+    @screen_buffer = String::Builder.new
+    @screen_buffer << "\x1b[?25l" # hide cursor
+    @screen_buffer << "\x1b[H"    # reposition cursor
 
     draw_rows
 
-    @buffer << "\x1b[H"    # reposition cursor
-    @buffer << "\x1b[?25h" # show cursor
-    print buffer.to_s
+    @screen_buffer << "\x1b[H"    # reposition cursor
+    @screen_buffer << "\x1b[?25h" # show cursor
+    print screen_buffer.to_s
   end
 
-  # todo: get window size the hard way
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
   private def get_window_size!
-    STDOUT.print "\x1b[999C\x1b[999B"
-    STDOUT.print "\x1b[6n"
+    print "\x1b[999C\x1b[999B"
+    print "\x1b[6n"
 
     puts ""
     size = String::Builder.new
@@ -96,6 +94,9 @@ class Editor
         _all, rows_s, cols_s = matches
         @columns = cols_s.to_i
         @rows = rows_s.to_i
+      else
+        puts "Could not determine screen size, exiting"
+        Process.exit(0)
       end
     end
   end
