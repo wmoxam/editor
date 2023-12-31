@@ -1,6 +1,9 @@
 # A simple text editor
 # Based on kilo, https://viewsourcecode.org/snaptoken/kilo/index.html
 
+require "./key_commands"
+require "./key_mapper"
+
 class Editor
   VERSION = "0.1.0"
 
@@ -27,10 +30,6 @@ class Editor
       print "\x1b[2J"
       print "\x1b[H"
     end
-  end
-
-  private def ctrl_key(char)
-    char.bytes.first & 0x1f
   end
 
   private def draw_rows
@@ -78,48 +77,31 @@ class Editor
     end
   end
 
-  private def editor_move_cursor(key)
-    case key
-    when 'a'
+  private def editor_move_cursor(direction)
+    case direction
+    when KeyCommands::Left
       @cursor_x -= 1 if @cursor_x > 1
-    when 'd'
+    when KeyCommands::Right
       @cursor_x += 1 if @cursor_x < columns
-    when 'w'
+    when KeyCommands::Up
       @cursor_y -= 1 if @cursor_y > 1
-    when 's'
+    when KeyCommands::Down
       @cursor_y += 1 if @cursor_y < rows
     end
   end
 
   private def process_keypresses(io)
-    c = io.read_char
+    mapper = KeyMapper.new(io)
 
-    unless c.nil?
-      if c.ascii_control?
-        case c.bytes.first
-        when ctrl_key('q')
-          return false
-        when '\e'
-          case io.read_char
-          when '['
-            case io.read_char
-            when 'A'
-              editor_move_cursor 'w'
-            when 'B'
-              editor_move_cursor 's'
-            when 'C'
-              editor_move_cursor 'd'
-            when 'D'
-              editor_move_cursor 'a'
-            end
-          end
-        end
-      else
-        case c.bytes.first
-        when 'w', 's', 'a', 'd'
-          editor_move_cursor c
-        end
-      end
+    case mapper.command
+    when KeyCommands::PageUp
+      rows.times { editor_move_cursor KeyCommands::Up }
+    when KeyCommands::PageDown
+      rows.times { editor_move_cursor KeyCommands::Down }
+    when KeyCommands::Quit
+      return false
+    else
+      editor_move_cursor(mapper.command) if mapper.movement?
     end
 
     true
