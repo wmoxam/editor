@@ -6,4 +6,6 @@ enum KeyCommands
   Right
   PageUp
   PageDown
+  Home
+  End
 end

@@ -22,9 +22,16 @@ class KeyMapper
             KeyCommands::Quit
           when '\e'
             seq1 = io.read_char
+            seq2 = io.read_char
             case seq1
+            when '0'
+              case seq2
+              when 'H'
+                KeyCommands::Home
+              when 'F'
+                KeyCommands::End
+              end
             when '['
-              seq2 = io.read_char
               case seq2
               when 'A'
                 KeyCommands::Up
@@ -34,14 +41,26 @@ class KeyMapper
                 KeyCommands::Right
               when 'D'
                 KeyCommands::Left
+              when 'H'
+                KeyCommands::Home
+              when 'F'
+                KeyCommands::End
               when /\d/
                 seq3 = io.read_char
                 if seq3 == '~'
                   case seq2
-                  when '5' # page up
+                  when '1'
+                    KeyCommands::Home
+                  when '4'
+                    KeyCommands::End
+                  when '5'
                     KeyCommands::PageUp
-                  when '6' # page down
+                  when '6'
                     KeyCommands::PageDown
+                  when '7'
+                    KeyCommands::Home
+                  when '8'
+                    KeyCommands::End
                   end
                 end
               end
@@ -49,6 +68,10 @@ class KeyMapper
           end
         else
           case char.bytes.first
+          when '0'
+            KeyCommands::Home
+          when '$'
+            KeyCommands::End
           when 'w'
             KeyCommands::Up
           when 's'
@@ -57,6 +80,10 @@ class KeyMapper
             KeyCommands::Left
           when 'd'
             KeyCommands::Right
+          when 'H'
+            KeyCommands::PageUp
+          when 'L'
+            KeyCommands::PageDown
           end
         end
       end

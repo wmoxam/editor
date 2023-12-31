@@ -94,6 +94,10 @@ class Editor
     mapper = KeyMapper.new(io)
 
     case mapper.command
+    when KeyCommands::Home
+      @cursor_x = 0
+    when KeyCommands::End
+      @cursor_x = columns
     when KeyCommands::PageUp
       rows.times { editor_move_cursor KeyCommands::Up }
     when KeyCommands::PageDown
