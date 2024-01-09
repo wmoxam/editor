@@ -8,4 +8,5 @@ enum KeyCommands
   PageDown
   Home
   End
+  Del
 end

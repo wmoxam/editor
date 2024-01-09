@@ -51,6 +51,8 @@ class KeyMapper
                   case seq2
                   when '1'
                     KeyCommands::Home
+                  when '3'
+                    KeyCommands::Del
                   when '4'
                     KeyCommands::End
                   when '5'
