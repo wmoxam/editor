@@ -7,8 +7,11 @@ require "./key_mapper"
 class Editor
   VERSION = "0.1.0"
 
-  property rows : Int32 = 0
-  property columns : Int32 = 0
+  property rows : Array(String) = [] of String
+  property row_offset : Int32 = 0
+
+  property row_count : Int32 = 0
+  property column_count : Int32 = 0
 
   property cursor_x : Int32 = 1
   property cursor_y : Int32 = 1
@@ -17,6 +20,9 @@ class Editor
 
   def initialize
     get_window_size!
+    if ARGV.size > 0
+      open_file(ARGV[0])
+    end
     @screen_buffer = String::Builder.new
   end
 
@@ -33,16 +39,21 @@ class Editor
   end
 
   private def draw_rows
-    rows.times do |i|
-      if i == (rows / 3).to_i
-        welcome_msg = "Wes's editor -- version #{VERSION}"[0..columns - 1]
-        padding = (columns - welcome_msg.size) / 2
-        @screen_buffer << "#{" " * padding.to_i}#{welcome_msg}"
+    row_count.times do |editor_row|
+      buffer_row = editor_row + row_offset
+      if buffer_row + 1 > rows.size
+        if editor_row == (row_count / 3).to_i && rows.empty?
+          welcome_msg = "Wes's editor -- version #{VERSION}"[0..column_count - 1]
+          padding = (column_count - welcome_msg.size) / 2
+          @screen_buffer << "#{" " * padding.to_i}#{welcome_msg}"
+        else
+          @screen_buffer << "~"
+        end
       else
-        @screen_buffer << "~"
+        @screen_buffer << rows[buffer_row][0..column_count - 2]
       end
       @screen_buffer << "\x1b[K" # erases the part of the line to the right of the cursor
-      @screen_buffer << "\r\n" unless i == rows - 1
+      @screen_buffer << "\r\n" unless editor_row == row_count - 1
     end
   end
 
@@ -68,8 +79,8 @@ class Editor
 
       if matches
         _all, rows_s, cols_s = matches
-        @columns = cols_s.to_i
-        @rows = rows_s.to_i
+        @column_count = cols_s.to_i
+        @row_count = rows_s.to_i
       else
         puts "Could not determine screen size, exiting"
         Process.exit(0)
@@ -82,11 +93,22 @@ class Editor
     when KeyCommands::Left
       @cursor_x -= 1 if @cursor_x > 1
     when KeyCommands::Right
-      @cursor_x += 1 if @cursor_x < columns
+      @cursor_x += 1 if @cursor_x < column_count
     when KeyCommands::Up
       @cursor_y -= 1 if @cursor_y > 1
+      @row_offset -= 1 if cursor_y == 1 && row_offset > 0
     when KeyCommands::Down
-      @cursor_y += 1 if @cursor_y < rows
+      if @cursor_y < row_count
+        @cursor_y += 1
+      elsif cursor_y + row_offset < rows.size
+        @row_offset += 1
+      end
+    end
+  end
+
+  private def open_file(filename)
+    File.each_line(filename) do |line|
+      rows << line.chomp
     end
   end
 
@@ -97,11 +119,11 @@ class Editor
     when KeyCommands::Home
       @cursor_x = 0
     when KeyCommands::End
-      @cursor_x = columns
+      @cursor_x = column_count
     when KeyCommands::PageUp
-      rows.times { editor_move_cursor KeyCommands::Up }
+      row_count.times { editor_move_cursor KeyCommands::Up }
     when KeyCommands::PageDown
-      rows.times { editor_move_cursor KeyCommands::Down }
+      row_count.times { editor_move_cursor KeyCommands::Down }
     when KeyCommands::Quit
       return false
     else
