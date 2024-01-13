@@ -1,27 +1,11 @@
 # editor
 
-TODO: Write a description here
+There are many like it but this one is mine!
 
-## Installation
+I'm following the [kilo tutorial](https://viewsourcecode.org/snaptoken/kilo/)
 
-TODO: Write installation instructions here
-
-## Usage
-
-TODO: Write usage instructions here
-
-## Development
-
-TODO: Write development instructions here
-
-## Contributing
-
-1. Fork it (<https://github.com/your-github-user/editor/fork>)
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+Eventually I want vim like bindings, a sublime like project drawer, and extentions written in mruby
 
 ## Contributors
 
-- [“Wesley](https://github.com/your-github-user) - creator and maintainer
+- [“Wesley](https://github.com/wmoxam) - creator and maintainer
