@@ -24,26 +24,19 @@ class KeyMapper
             seq1 = io.read_char
             seq2 = io.read_char
             case seq1
-            when '0'
-              case seq2
-              when 'H'
-                KeyCommands::Home
-              when 'F'
-                KeyCommands::End
-              end
-            when '['
-              case seq2
-              when 'A'
+            when 'O', '['
+              case seq2.to_s
+              when "A"
                 KeyCommands::Up
-              when 'B'
+              when "B"
                 KeyCommands::Down
-              when 'C'
+              when "C"
                 KeyCommands::Right
-              when 'D'
+              when "D"
                 KeyCommands::Left
-              when 'H'
+              when "H"
                 KeyCommands::Home
-              when 'F'
+              when "F"
                 KeyCommands::End
               when /\d/
                 seq3 = io.read_char
