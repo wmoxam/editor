@@ -9,6 +9,7 @@ class Editor
 
   property rows : Array(String) = [] of String
   property row_offset : Int32 = 0
+  property column_offset : Int32 = 0
 
   property row_count : Int32 = 0
   property column_count : Int32 = 0
@@ -50,7 +51,9 @@ class Editor
           @screen_buffer << "~"
         end
       else
-        @screen_buffer << rows[buffer_row][0..column_count - 2]
+        this_row = rows[buffer_row]
+        buffer_column = [column_offset, this_row.size].min
+        @screen_buffer << this_row[buffer_column, column_count]
       end
       @screen_buffer << "\x1b[K" # erases the part of the line to the right of the cursor
       @screen_buffer << "\r\n" unless editor_row == row_count - 1
@@ -91,16 +94,21 @@ class Editor
   private def editor_move_cursor(direction)
     case direction
     when KeyCommands::Left
-      @cursor_x -= 1 if @cursor_x > 1
+      @cursor_x -= 1 if cursor_x > 1
+      @column_offset -= 1 if cursor_x == 1 && column_offset > 0
     when KeyCommands::Right
-      @cursor_x += 1 if @cursor_x < column_count
+      if cursor_x < column_count
+        @cursor_x += 1
+      elsif (cursor_x + column_offset) >= column_count
+        @column_offset += 1
+      end
     when KeyCommands::Up
-      @cursor_y -= 1 if @cursor_y > 1
+      @cursor_y -= 1 if cursor_y > 1
       @row_offset -= 1 if cursor_y == 1 && row_offset > 0
     when KeyCommands::Down
-      if @cursor_y < row_count
+      if cursor_y < row_count
         @cursor_y += 1
-      elsif cursor_y + row_offset < rows.size
+      elsif (cursor_y + row_offset) < rows.size
         @row_offset += 1
       end
     end
