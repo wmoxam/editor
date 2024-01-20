@@ -97,6 +97,8 @@ class Editor
       @cursor_x -= 1 if cursor_x > 1
       @column_offset -= 1 if cursor_x == 1 && column_offset > 0
     when KeyCommands::Right
+      return unless cursor_x + column_offset < row_length
+
       if cursor_x < column_count
         @cursor_x += 1
       elsif (cursor_x + column_offset) >= column_count
@@ -114,6 +116,10 @@ class Editor
     end
   end
 
+  private def row_length
+    rows[cursor_y + row_offset - 1].size + 1
+  end
+
   private def open_file(filename)
     File.each_line(filename) do |line|
       rows << line.chomp
@@ -127,7 +133,7 @@ class Editor
     when KeyCommands::Home
       @cursor_x = 0
     when KeyCommands::End
-      @cursor_x = column_count
+      @cursor_x = row_length
     when KeyCommands::PageUp
       row_count.times { editor_move_cursor KeyCommands::Up }
     when KeyCommands::PageDown
