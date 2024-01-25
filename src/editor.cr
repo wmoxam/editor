@@ -16,6 +16,7 @@ class Editor
 
   property cursor_x : Int32 = 1
   property cursor_y : Int32 = 1
+  property last_x : Int32 = 0
 
   property screen_buffer : String::Builder
 
@@ -94,10 +95,15 @@ class Editor
   private def editor_move_cursor(direction)
     case direction
     when KeyCommands::Left
-      @cursor_x -= 1 if cursor_x > 1
+      return if cursor_x < 2
+
+      @last_x = 0
+      @cursor_x -= 1
       @column_offset -= 1 if cursor_x == 1 && column_offset > 0
     when KeyCommands::Right
       return unless cursor_x + column_offset < row_length
+
+      @last_x = 0
 
       if cursor_x < column_count
         @cursor_x += 1
@@ -107,16 +113,42 @@ class Editor
     when KeyCommands::Up
       @cursor_y -= 1 if cursor_y > 1
       @row_offset -= 1 if cursor_y == 1 && row_offset > 0
+
+      if last_x > 0
+        @column_offset = 0
+        @cursor_x = last_x
+      end
+
+      if cursor_x + column_offset > row_length
+        @last_x = cursor_x + column_offset
+        @column_offset = 0
+        @cursor_x = row_length
+      end
     when KeyCommands::Down
+      return if cursor_y + row_offset >= rows.size
+
       if cursor_y < row_count
         @cursor_y += 1
       elsif (cursor_y + row_offset) < rows.size
         @row_offset += 1
       end
+
+      if last_x > 0
+        @column_offset = 0
+        @cursor_x = last_x
+      end
+
+      if cursor_x + column_offset > row_length
+        @last_x = cursor_x + column_offset
+        @column_offset = 0
+        @cursor_x = row_length
+      end
     end
   end
 
   private def row_length
+    return 0 if rows.empty?
+
     rows[cursor_y + row_offset - 1].size + 1
   end
 
