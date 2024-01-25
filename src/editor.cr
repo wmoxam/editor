@@ -95,19 +95,38 @@ class Editor
   private def editor_move_cursor(direction)
     case direction
     when KeyCommands::Left
-      return if cursor_x < 2
+      if at_beginning_of_line?
+        if !at_beginning_of_file?
+          editor_move_cursor(KeyCommands::Up)
+
+          @cursor_x = [row_length, column_count].min
+          @column_offset = [0, row_length - column_count].max
+          @last_x = 0
+        end
+
+        return
+      end
 
       @last_x = 0
       @cursor_x -= 1
       @column_offset -= 1 if cursor_x == 1 && column_offset > 0
     when KeyCommands::Right
-      return unless cursor_x + column_offset < row_length
+      if at_end_of_line?
+        return if at_end_of_file?
+
+        @column_offset = 0
+        @cursor_x = 1
+        @last_x = 0
+
+        editor_move_cursor(KeyCommands::Down)
+        return
+      end
 
       @last_x = 0
 
       if cursor_x < column_count
         @cursor_x += 1
-      elsif (cursor_x + column_offset) >= column_count
+      elsif !at_end_of_line?
         @column_offset += 1
       end
     when KeyCommands::Up
@@ -119,17 +138,17 @@ class Editor
         @cursor_x = last_x
       end
 
-      if cursor_x + column_offset > row_length
-        @last_x = cursor_x + column_offset
+      if at_end_of_line?
+        @last_x = row_position
         @column_offset = 0
         @cursor_x = row_length
       end
     when KeyCommands::Down
-      return if cursor_y + row_offset >= rows.size
+      return if at_end_of_file?
 
       if cursor_y < row_count
         @cursor_y += 1
-      elsif (cursor_y + row_offset) < rows.size
+      elsif (file_row) < rows.size
         @row_offset += 1
       end
 
@@ -138,18 +157,42 @@ class Editor
         @cursor_x = last_x
       end
 
-      if cursor_x + column_offset > row_length
-        @last_x = cursor_x + column_offset
+      if at_end_of_line?
+        @last_x = row_position
         @column_offset = 0
         @cursor_x = row_length
       end
     end
   end
 
+  private def at_beginning_of_line?
+    cursor_x < 2
+  end
+
+  private def at_beginning_of_file?
+    file_row == 1
+  end
+
+  private def at_end_of_file?
+    file_row >= rows.size
+  end
+
+  private def at_end_of_line?
+    row_position >= row_length
+  end
+
+  private def file_row
+    cursor_y + row_offset
+  end
+
   private def row_length
     return 0 if rows.empty?
 
-    rows[cursor_y + row_offset - 1].size + 1
+    rows[file_row - 1].size + 1
+  end
+
+  private def row_position
+    cursor_x + column_offset
   end
 
   private def open_file(filename)
