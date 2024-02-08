@@ -7,6 +7,9 @@ require "./key_mapper"
 class Editor
   VERSION = "0.1.0"
 
+  TAB_SPACES = 2
+
+  property rendered_rows : Array(String) = [] of String
   property rows : Array(String) = [] of String
   property row_offset : Int32 = 0
   property column_offset : Int32 = 0
@@ -14,7 +17,7 @@ class Editor
   property row_count : Int32 = 0
   property column_count : Int32 = 0
 
-  property cursor_x : Int32 = 1
+  property cursor_x : Int32 = 0
   property cursor_y : Int32 = 1
   property last_x : Int32 = 0
 
@@ -52,7 +55,7 @@ class Editor
           @screen_buffer << "~"
         end
       else
-        this_row = rows[buffer_row]
+        this_row = rendered_rows[buffer_row]
         buffer_column = [column_offset, this_row.size].min
         @screen_buffer << this_row[buffer_column, column_count]
       end
@@ -109,13 +112,13 @@ class Editor
 
       @last_x = 0
       @cursor_x -= 1
-      @column_offset -= 1 if cursor_x == 1 && column_offset > 0
+      @column_offset -= 1 if cursor_x == 0 && column_offset > 0
     when KeyCommands::Right
       if at_end_of_line?
         return if at_end_of_file?
 
         @column_offset = 0
-        @cursor_x = 1
+        @cursor_x = 0
         @last_x = 0
 
         editor_move_cursor(KeyCommands::Down)
@@ -124,7 +127,7 @@ class Editor
 
       @last_x = 0
 
-      if cursor_x < column_count
+      if cursor_x < column_count - 1
         @cursor_x += 1
       elsif !at_end_of_line?
         @column_offset += 1
@@ -148,7 +151,7 @@ class Editor
 
       if cursor_y < row_count
         @cursor_y += 1
-      elsif (file_row) < rows.size
+      elsif (file_row) < rows.size - 1
         @row_offset += 1
       end
 
@@ -166,15 +169,15 @@ class Editor
   end
 
   private def at_beginning_of_line?
-    cursor_x < 2
+    cursor_x < 1
   end
 
   private def at_beginning_of_file?
-    file_row == 1
+    file_row == 0
   end
 
   private def at_end_of_file?
-    file_row >= rows.size
+    file_row >= rows.size - 1
   end
 
   private def at_end_of_line?
@@ -182,13 +185,22 @@ class Editor
   end
 
   private def file_row
-    cursor_y + row_offset
+    cursor_y + row_offset - 1
+  end
+
+  private def rendered_cursor_x
+    end_range = cursor_x - 1
+    if end_range >= 0
+      cursor_x + (rows[file_row][0..end_range].scan(/\t/).size * (TAB_SPACES - 1))
+    else
+      cursor_x
+    end
   end
 
   private def row_length
     return 0 if rows.empty?
 
-    rows[file_row - 1].size + 1
+    rows[file_row].size
   end
 
   private def row_position
@@ -198,6 +210,7 @@ class Editor
   private def open_file(filename)
     File.each_line(filename) do |line|
       rows << line.chomp
+      rendered_rows << line.chomp.gsub(/\t/, " " * TAB_SPACES)
     end
   end
 
@@ -229,8 +242,8 @@ class Editor
 
     draw_rows
 
-    @screen_buffer << "\x1b[#{cursor_y};#{cursor_x}H" # reposition cursor
-    @screen_buffer << "\x1b[?25h"                     # show cursor
+    @screen_buffer << "\x1b[#{cursor_y};#{rendered_cursor_x + 1}H" # reposition cursor
+    @screen_buffer << "\x1b[?25h"                                  # show cursor
     print screen_buffer.to_s
   end
 end
