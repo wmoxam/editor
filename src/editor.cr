@@ -21,6 +21,8 @@ class Editor
   property cursor_y : Int32 = 1
   property last_x : Int32 = 0
 
+  property filename : String | Nil = nil
+
   property screen_buffer : String::Builder
 
   def initialize
@@ -60,8 +62,23 @@ class Editor
         @screen_buffer << this_row[buffer_column, column_count]
       end
       @screen_buffer << "\x1b[K" # erases the part of the line to the right of the cursor
-      @screen_buffer << "\r\n" unless editor_row == row_count - 1
+      @screen_buffer << "\r\n"
     end
+  end
+
+  private def draw_status_bar
+    status = "#{(filename || "[No name]")[0..19]} - #{rows.size} lines"
+    right_status = "#{[rows.size, cursor_y + row_offset].min}/#{rows.size}"
+
+    @screen_buffer << "\x1b[7m"
+    @screen_buffer << status[0, column_count]
+    if status.size + 1 + right_status.size <= column_count
+      @screen_buffer << " " * (column_count - status.size - right_status.size)
+      @screen_buffer << right_status
+    elsif column_count - status.size > 0
+      @screen_buffer << " " * (column_count - status.size)
+    end
+    @screen_buffer << "\x1b[m"
   end
 
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
@@ -87,7 +104,7 @@ class Editor
       if matches
         _all, rows_s, cols_s = matches
         @column_count = cols_s.to_i
-        @row_count = rows_s.to_i
+        @row_count = rows_s.to_i - 1
       else
         puts "Could not determine screen size, exiting"
         Process.exit(0)
@@ -208,6 +225,8 @@ class Editor
   end
 
   private def open_file(filename)
+    @filename = filename
+
     File.each_line(filename) do |line|
       rows << line.chomp
       rendered_rows << line.chomp.gsub(/\t/, " " * TAB_SPACES)
@@ -241,6 +260,7 @@ class Editor
     @screen_buffer << "\x1b[H"    # reposition cursor
 
     draw_rows
+    draw_status_bar
 
     @screen_buffer << "\x1b[#{cursor_y};#{rendered_cursor_x + 1}H" # reposition cursor
     @screen_buffer << "\x1b[?25h"                                  # show cursor
