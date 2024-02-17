@@ -25,11 +25,16 @@ class Editor
 
   property screen_buffer : String::Builder
 
+  property status_message : String = ""
+  property status_time : Time = Time.local
+
   def initialize
     get_window_size!
     if ARGV.size > 0
       open_file(ARGV[0])
     end
+    @status_message = "HELP: Ctrl-Q = quit"
+    @status_time = Time.local
     @screen_buffer = String::Builder.new
   end
 
@@ -79,6 +84,12 @@ class Editor
       @screen_buffer << " " * (column_count - status.size)
     end
     @screen_buffer << "\x1b[m"
+    @screen_buffer << "\r\n"
+  end
+
+  private def draw_message_bar
+    @screen_buffer << "\x1b[K"
+    @screen_buffer << status_message[0, column_count] if (Time.local - status_time).seconds < 5
   end
 
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
@@ -104,7 +115,7 @@ class Editor
       if matches
         _all, rows_s, cols_s = matches
         @column_count = cols_s.to_i
-        @row_count = rows_s.to_i - 1
+        @row_count = rows_s.to_i - 2
       else
         puts "Could not determine screen size, exiting"
         Process.exit(0)
@@ -261,6 +272,7 @@ class Editor
 
     draw_rows
     draw_status_bar
+    draw_message_bar
 
     @screen_buffer << "\x1b[#{cursor_y};#{rendered_cursor_x + 1}H" # reposition cursor
     @screen_buffer << "\x1b[?25h"                                  # show cursor
