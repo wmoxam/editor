@@ -7,20 +7,40 @@ class Viewport
   property cursor_y : Int32 = 1
   property last_x : Int32 = 0
   property buffer : Buffer
+  property screen_buffer : String::Builder
 
-  delegate rendered_rows, rows, to: @buffer
+  property status_message : String = ""
+  property status_time : Time = Time.local
+
+  delegate filename, rendered_rows, rows, to: @buffer
 
   def initialize(buffer)
     @buffer = buffer
+    @screen_buffer = String::Builder.new
+    @status_message = "HELP: Ctrl-Q = quit"
+    @status_time = Time.local
+
     get_window_size!
   end
 
-  def editor_move_cursor(direction)
+  def end!
+    @cursor_x = row_length
+  end
+
+  def file_row
+    cursor_y + row_offset - 1
+  end
+
+  def home!
+    @cursor_x = 0
+  end
+
+  def move_cursor(direction)
     case direction
     when KeyCommands::Left
       if at_beginning_of_line?
         if !at_beginning_of_file?
-          editor_move_cursor(KeyCommands::Up)
+          move_cursor(KeyCommands::Up)
 
           @cursor_x = [row_length, column_count].min
           @column_offset = [0, row_length - column_count].max
@@ -41,7 +61,7 @@ class Viewport
         @cursor_x = 0
         @last_x = 0
 
-        editor_move_cursor(KeyCommands::Down)
+        move_cursor(KeyCommands::Down)
         return
       end
 
@@ -88,8 +108,18 @@ class Viewport
     end
   end
 
-  def file_row
-    cursor_y + row_offset - 1
+  def refresh_screen
+    @screen_buffer = String::Builder.new
+    @screen_buffer << "\x1b[?25l" # hide cursor
+    @screen_buffer << "\x1b[H"    # reposition cursor
+
+    draw_rows
+    draw_status_bar
+    draw_message_bar
+
+    @screen_buffer << "\x1b[#{cursor_y};#{rendered_cursor_x + 1}H" # reposition cursor
+    @screen_buffer << "\x1b[?25h"                                  # show cursor
+    print screen_buffer.to_s
   end
 
   def row_length
@@ -112,6 +142,48 @@ class Viewport
 
   private def at_end_of_line?
     row_position >= row_length
+  end
+
+  private def draw_rows
+    row_count.times do |editor_row|
+      buffer_row = editor_row + row_offset
+      if buffer_row + 1 > rows.size
+        if editor_row == (row_count / 3).to_i && rows.empty?
+          welcome_msg = "Wes's editor -- version #{Editor::VERSION}"[0..column_count - 1]
+          padding = (column_count - welcome_msg.size) / 2
+          @screen_buffer << "#{" " * padding.to_i}#{welcome_msg}"
+        else
+          @screen_buffer << "~"
+        end
+      else
+        this_row = rendered_rows[buffer_row]
+        buffer_column = [column_offset, this_row.size].min
+        @screen_buffer << this_row[buffer_column, column_count]
+      end
+      @screen_buffer << "\x1b[K" # erases the part of the line to the right of the cursor
+      @screen_buffer << "\r\n"
+    end
+  end
+
+  private def draw_status_bar
+    status = "#{(filename || "[No name]")[0..19]} - #{rows.size} lines"
+    right_status = "#{[rows.size, cursor_y + row_offset].min}/#{rows.size}"
+
+    @screen_buffer << "\x1b[7m"
+    @screen_buffer << status[0, column_count]
+    if status.size + 1 + right_status.size <= column_count
+      @screen_buffer << " " * (column_count - status.size - right_status.size)
+      @screen_buffer << right_status
+    elsif column_count - status.size > 0
+      @screen_buffer << " " * (column_count - status.size)
+    end
+    @screen_buffer << "\x1b[m"
+    @screen_buffer << "\r\n"
+  end
+
+  private def draw_message_bar
+    @screen_buffer << "\x1b[K"
+    @screen_buffer << status_message[0, column_count] if (Time.local - status_time).seconds < 5
   end
 
   # https://viewsourcecode.org/snaptoken/kilo/03.rawInputAndOutput.html#window-size-the-hard-way
@@ -142,6 +214,15 @@ class Viewport
         puts "Could not determine screen size, exiting"
         Process.exit(0)
       end
+    end
+  end
+
+  private def rendered_cursor_x
+    end_range = cursor_x - 1
+    if end_range >= 0
+      cursor_x + (rows[file_row][0..end_range].scan(/\t/).size * (Editor::TAB_SPACES - 1))
+    else
+      cursor_x
     end
   end
 
