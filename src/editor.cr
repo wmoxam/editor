@@ -14,7 +14,7 @@ class Editor
   property buffer : Buffer
   property viewport : Viewport
 
-  delegate move_cursor, refresh_screen, row_count, to: @viewport
+  delegate insert, move_cursor, refresh_screen, row_count, to: @viewport
   delegate open_file, to: @buffer
 
   def initialize
@@ -54,7 +54,11 @@ class Editor
     when KeyCommands::Quit
       return false
     else
-      move_cursor(mapper.command) if mapper.movement?
+      if mapper.movement?
+        move_cursor mapper.command
+      else
+        insert mapper.read_char
+      end
     end
 
     true

@@ -62,24 +62,25 @@ class KeyMapper
             end
           end
         else
-          case char.bytes.first
-          when '0'
-            KeyCommands::Home
-          when '$'
-            KeyCommands::End
-          when 'w'
-            KeyCommands::Up
-          when 's'
-            KeyCommands::Down
-          when 'a'
-            KeyCommands::Left
-          when 'd'
-            KeyCommands::Right
-          when 'H'
-            KeyCommands::PageUp
-          when 'L'
-            KeyCommands::PageDown
-          end
+          # # Add edit mode later ...
+          # case char.bytes.first
+          # when '0'
+          #   KeyCommands::Home
+          # when '$'
+          #   KeyCommands::End
+          # when 'w'
+          #   KeyCommands::Up
+          # when 's'
+          #   KeyCommands::Down
+          # when 'a'
+          #   KeyCommands::Left
+          # when 'd'
+          #   KeyCommands::Right
+          # when 'H'
+          #   KeyCommands::PageUp
+          # when 'L'
+          #   KeyCommands::PageDown
+          # end
         end
       end
     end
