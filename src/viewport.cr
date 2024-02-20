@@ -30,6 +30,10 @@ class Viewport
     @cursor_movement ||= CursorMovement.new(cursor, self)
   end
 
+  def delete_char
+    buffer.delete_at_cursor(cursor, self)
+  end
+
   def end!
     cursor.x = row_length
   end

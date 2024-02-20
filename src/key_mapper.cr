@@ -18,8 +18,12 @@ class KeyMapper
       unless char.nil?
         if char.ascii_control?
           case char.bytes.first
+          when 127
+            KeyCommands::Backspace
           when ctrl_key('q')
             KeyCommands::Quit
+          when ctrl_key('h')
+            KeyCommands::Backspace
           when '\e'
             seq1 = io.read_char
             seq2 = io.read_char

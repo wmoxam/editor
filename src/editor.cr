@@ -53,6 +53,8 @@ class Editor
       row_count.times { move_cursor KeyCommands::Down }
     when KeyCommands::Quit
       return false
+    when KeyCommands::Del, KeyCommands::Backspace
+      viewport.delete_char
     else
       if mapper.movement?
         move_cursor mapper.command

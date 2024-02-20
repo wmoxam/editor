@@ -1,4 +1,5 @@
 enum KeyCommands
+  Backspace
   Quit
   Up
   Down
