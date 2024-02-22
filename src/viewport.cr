@@ -13,7 +13,8 @@ class Viewport
   property status_message : StatusMessage
 
   delegate filename, rendered_rows, rows, to: @buffer
-  delegate column_offset, file_row, row_offset, row_position, to: @cursor
+  delegate at_beginning_of_file?, at_beginning_of_line?, column_offset,
+    file_row, row_offset, row_position, to: @cursor
 
   def initialize(buffer)
     @screen_buffer = String::Builder.new
@@ -26,12 +27,31 @@ class Viewport
     get_window_size!
   end
 
+  def at_end_of_file?
+    file_row >= rows.size - 1
+  end
+
+  def at_end_of_line?
+    row_position >= row_length
+  end
+
   def cursor_movement
     @cursor_movement ||= CursorMovement.new(cursor, self)
   end
 
-  def delete_char
-    buffer.delete_at_cursor(cursor, self)
+  def delete_current
+    if at_end_of_line?
+      buffer.concat_rows_at_cursor(cursor) unless at_end_of_file?
+    else
+      buffer.delete_at_cursor(cursor)
+    end
+  end
+
+  def delete_previous
+    return if at_beginning_of_file? && at_beginning_of_line?
+
+    move_cursor(KeyCommands::Left)
+    delete_current
   end
 
   def end!

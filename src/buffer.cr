@@ -3,6 +3,19 @@ class Buffer
   property rendered_rows : Array(String) = [] of String
   property rows : Array(String) = [] of String
 
+  def concat_rows_at_cursor(cursor)
+    removed = rows.delete_at(cursor.file_row + 1)
+    rendered_rows.delete_at(cursor.file_row + 1)
+
+    rows[cursor.file_row] = rows[cursor.file_row] + removed
+    rendered_rows[cursor.file_row] = render(rows[cursor.file_row])
+  end
+
+  def delete_at_cursor(cursor)
+    rows[cursor.file_row] = rows[cursor.file_row].delete_at(cursor.row_position, 1)
+    rendered_rows[cursor.file_row] = render(rows[cursor.file_row])
+  end
+
   def insert_at_cursor(text, cursor, viewport)
     return if text.nil?
 

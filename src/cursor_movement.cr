@@ -2,8 +2,9 @@ class CursorMovement
   property cursor : Cursor
   property viewport : Viewport
 
-  delegate column_offset, column_count, file_row, last_x, row_count, row_offset, row_position, x, y, to: @cursor
-  delegate column_count, row_count, row_length, rows, to: @viewport
+  delegate at_beginning_of_file?, at_beginning_of_line?, column_offset,
+    file_row, last_x, row_offset, row_position, x, y, to: @cursor
+  delegate at_end_of_file?, at_end_of_line?, column_count, row_count, row_length, rows, to: @viewport
 
   Left  = KeyCommands::Left
   Right = KeyCommands::Right
@@ -13,18 +14,6 @@ class CursorMovement
   def initialize(cursor, viewport)
     @cursor = cursor
     @viewport = viewport
-  end
-
-  private def at_beginning_of_line?
-    x < 1
-  end
-
-  private def at_end_of_file?
-    file_row >= rows.size - 1
-  end
-
-  private def at_beginning_of_file?
-    file_row == 0
   end
 
   def move(direction)
@@ -46,7 +35,7 @@ class CursorMovement
       @cursor.x -= 1
       @cursor.column_offset -= 1 if x == 0 && column_offset > 0
     when Right
-      if row_position >= row_length
+      if at_end_of_line?
         return if at_end_of_file?
 
         @cursor.column_offset = 0
