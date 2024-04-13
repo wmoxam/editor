@@ -13,6 +13,11 @@ class Cursor
     x < 1
   end
 
+  def beginning_of_line!
+    @x = 0
+    @column_offset = 0
+  end
+
   def file_row
     y + row_offset - 1
   end
