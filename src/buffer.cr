@@ -23,6 +23,11 @@ class Buffer
 
     file_row = cursor.file_row
 
+    if rows.size.zero?
+      rows << ""
+      rendered_rows << ""
+    end
+
     if text == '\r'
       # enter/return splits the line at the cursor
       before = after = ""
