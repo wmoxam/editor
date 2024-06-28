@@ -90,6 +90,12 @@ class KeyMapper
     end
   end
 
+  def control?
+    if char = @read_char
+      char.control?
+    end
+  end
+
   def movement?
     MOVEMENTS.includes?(command)
   end

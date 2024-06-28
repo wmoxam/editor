@@ -60,7 +60,7 @@ class Editor
     else
       if mapper.movement?
         move_cursor mapper.command
-      else
+      elsif !mapper.control?
         insert mapper.read_char
       end
     end
